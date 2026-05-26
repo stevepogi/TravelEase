@@ -94,21 +94,26 @@ const Admin: React.FC = () => {
 
   /* ── Save ── */
   const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const table = activePanel === 'feedback' ? 'reviews' : activePanel;
-    const { id, ...payload } = formData;
-    if (activePanel === 'hotels' && typeof payload.amenities === 'string') {
-      payload.amenities = payload.amenities.split(',').map((s: string) => s.trim());
-    }
-    if (id) {
-      await supabase.from(table).update(payload).eq('id', id);
-    } else {
-      await supabase.from(table).insert([payload]);
-    }
+  e.preventDefault();
+  const table = activePanel === 'feedback' ? 'reviews' : activePanel;
+  const { id, images, ...payload } = formData;
+  if (activePanel === 'hotels' && typeof payload.amenities === 'string') {
+    payload.amenities = payload.amenities.split(',').map((s: string) => s.trim());
+  }
+  let error;
+  if (id) {
+    ({ error } = await supabase.from(table).update(payload).eq('id', id));
+  } else {
+    ({ error } = await supabase.from(table).insert([payload]));
+  }
+  if (error) {
+    alert('Failed to save: ' + error.message);
+  } else {
     setShowModal(false);
     fetchTableData();
     fetchCounts();
-  };
+  }
+};
   const updateBookingStatus = async (id: string, status: string) => {
   await supabase.from('bookings').update({ status }).eq('id', id);
   
@@ -126,13 +131,17 @@ const Admin: React.FC = () => {
 };
 
   const handleDelete = async (id: string) => {
-    const table = activePanel === 'feedback' ? 'reviews' : activePanel;
-    if (window.confirm('Are you sure you want to delete this record?')) {
-      await supabase.from(table).delete().eq('id', id);
+  const table = activePanel === 'feedback' ? 'reviews' : activePanel;
+  if (window.confirm('Are you sure you want to delete this record?')) {
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    if (error) {
+      alert('Failed to delete: ' + error.message);
+    } else {
       fetchTableData();
       fetchCounts();
     }
-  };
+  }
+};
 
   /* ── Room Management ── */
   const openRoomManager = async (hotel: any) => {
