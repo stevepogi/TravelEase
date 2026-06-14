@@ -12,7 +12,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<User>;
-  register: (email: string, password: string, fullName: string) => Promise<User>;
+  register: (email: string, password: string, firstName: string, lastName: string) => Promise<User>;
   logout: () => void;
 }
 
@@ -78,18 +78,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return userData;
   };
 
-  const register = async (email: string, password: string, fullName: string) => {
-    const trimmedEmail = email.trim().toLowerCase();
-    const trimmedPassword = password.trim();
-    const trimmedName = fullName.trim();
+  const register = async (email: string, password: string, firstName: string, lastName: string) => {
+  const trimmedEmail = email.trim().toLowerCase();
+  const trimmedPassword = password.trim();
+  const trimmedFirstName = firstName.trim();
+  const trimmedLastName = lastName.trim();
+  const trimmedName = `${trimmedFirstName} ${trimmedLastName}`;
 
-    if (trimmedPassword.length < 6) {
-      throw new Error('Password must be at least 6 characters long.');
-    }
+  if (trimmedPassword.length < 6) {
+    throw new Error('Password must be at least 6 characters long.');
+  }
 
-    if (!trimmedName) {
-      throw new Error('Please enter your full name.');
-    }
+  if (!trimmedFirstName) {
+    throw new Error('Please enter your first name.');
+  }
+
+  if (!trimmedLastName) {
+    throw new Error('Please enter your last name.');
+  }
 
     // Check if email already exists
     const { data: existing } = await supabase

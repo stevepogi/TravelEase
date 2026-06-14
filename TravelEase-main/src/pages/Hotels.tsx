@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useNotification } from '../context/NotificationContext.tsx';
+import { fetchHotelPrices, getAveragePrice } from '../lib/hotellook.ts';
 
 interface Hotel {
   id: string;
@@ -14,6 +15,7 @@ interface Hotel {
   stars: number;
   area: string;
   amenities: string[];
+
 }
 
 interface Room {
@@ -44,6 +46,7 @@ const Hotels: React.FC = () => {
   const [bookingRef, setBookingRef] = useState('');
   const [activeRoomType, setActiveRoomType] = useState('standard');
   const [galleryIdx, setGalleryIdx] = useState(0);
+  const [areaAverages, setAreaAverages] = useState<Record<string, number | null>>({});
   
   const { user } = useAuth();
   const { notify } = useNotification();
@@ -51,44 +54,56 @@ const Hotels: React.FC = () => {
   useEffect(() => { fetchHotels(); }, []);
 
   const fetchHotels = async () => {
-    setLoading(true);
-    const { data } = await supabase.from('hotels').select('*');
-    if (data) setHotels(data);
-    setLoading(false);
-  };
+  setLoading(true);
+  const { data } = await supabase.from('hotels').select('*');
+  if (data) setHotels(data);
+  setLoading(false);
+};
 
-  const [bookingDetails, setBookingDetails] = useState({ checkIn: '', checkOut: '', pax: 1, specialRequest: '', referenceNumber: '' });
+useEffect(() => {
+  if (hotels.length === 0) return;
 
-  useEffect(() => {
-    if (selectedHotel && bookingDetails.checkIn && bookingDetails.checkOut) {
-      fetchRoomsAndAvailability();
-    }
-  }, [selectedHotel, bookingDetails.checkIn, bookingDetails.checkOut]);
+  const uniqueAreas = Array.from(new Set(hotels.map(h => h.area).filter(Boolean)));
 
-  const fetchRoomsAndAvailability = async () => {
-    if (!selectedHotel) return;
-    const { data: roomsData } = await supabase
-      .from('hotel_rooms').select('*').eq('hotel_id', selectedHotel.id)
-      .order('room_number', { ascending: true });
-    if (roomsData) setRooms(roomsData);
+  uniqueAreas.forEach(async (area) => {
+    const prices = await fetchHotelPrices(area);
+    const avg = getAveragePrice(prices);
+    setAreaAverages(prev => ({ ...prev, [area]: avg }));
+  });
+}, [hotels]);
 
-    const { data: overlappingBookings } = await supabase
-      .from('bookings').select('room_id, details')
-      .eq('type', 'hotel').eq('entity_id', selectedHotel.id).neq('status', 'cancelled');
+const [bookingDetails, setBookingDetails] = useState({ checkIn: '', checkOut: '', pax: 1, specialRequest: '', referenceNumber: '' });
 
-    if (overlappingBookings) {
-      const bookedIds = overlappingBookings
-        .filter(b => {
-          const bCheckIn = new Date(b.details.check_in);
-          const bCheckOut = new Date(b.details.check_out);
-          const sCheckIn = new Date(bookingDetails.checkIn);
-          const sCheckOut = new Date(bookingDetails.checkOut);
-          return sCheckIn < bCheckOut && sCheckOut > bCheckIn;
-        })
-        .map(b => b.room_id).filter(id => id !== null);
-      setBookedRoomIds(bookedIds);
-    }
-  };
+useEffect(() => {
+  if (selectedHotel && bookingDetails.checkIn && bookingDetails.checkOut) {
+    fetchRoomsAndAvailability();
+  }
+}, [selectedHotel, bookingDetails.checkIn, bookingDetails.checkOut]);
+
+const fetchRoomsAndAvailability = async () => {
+  if (!selectedHotel) return;
+  const { data: roomsData } = await supabase
+    .from('hotel_rooms').select('*').eq('hotel_id', selectedHotel.id)
+    .order('room_number', { ascending: true });
+  if (roomsData) setRooms(roomsData);
+
+  const { data: overlappingBookings } = await supabase
+    .from('bookings').select('room_id, details')
+    .eq('type', 'hotel').eq('entity_id', selectedHotel.id).neq('status', 'cancelled');
+
+  if (overlappingBookings) {
+    const bookedIds = overlappingBookings
+      .filter(b => {
+        const bCheckIn = new Date(b.details.check_in);
+        const bCheckOut = new Date(b.details.check_out);
+        const sCheckIn = new Date(bookingDetails.checkIn);
+        const sCheckOut = new Date(bookingDetails.checkOut);
+        return sCheckIn < bCheckOut && sCheckOut > bCheckIn;
+      })
+      .map(b => b.room_id).filter(id => id !== null);
+    setBookedRoomIds(bookedIds);
+  }
+};
 
   const handleBooking = async () => {
     if (!user) { notify('error', 'Login Required', 'Please login to book a hotel'); return; }
@@ -210,7 +225,6 @@ const Hotels: React.FC = () => {
           <input type="text" placeholder="Search hotels or areas..." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       </div>
-
       {loading ? (
         <div className="text-center">Loading hotels...</div>
       ) : (
@@ -236,6 +250,11 @@ const Hotels: React.FC = () => {
                   </div>
                   <button className="btn-primary" onClick={() => { setSelectedHotel(hotel); setGalleryIdx(0); }}>Book Now</button>
                 </div>
+                {areaAverages[hotel.area] != null && (
+                  <p style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: '4px' }}>
+                    Avg. market price in {hotel.area}: ₱{areaAverages[hotel.area]!.toLocaleString()}/night
+                  </p>
+                )}
               </div>
             </div>
           ))}

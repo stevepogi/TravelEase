@@ -6,7 +6,8 @@ const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -24,7 +25,7 @@ const Login: React.FC = () => {
       if (isLogin) {
         loggedUser = await login(email, password);
       } else {
-        loggedUser = await register(email, password, fullName);
+        loggedUser = await register(email, password, firstName, lastName);
       }
       
       if (loggedUser && loggedUser.role === 'admin') {
@@ -52,17 +53,30 @@ const Login: React.FC = () => {
           {error && <div className="auth-error">{error}</div>}
           
           {!isLogin && (
-            <div className="form-group">
-              <label>Full Name</label>
-              <input 
-                type="text" 
-                value={fullName} 
-                onChange={(e) => setFullName(e.target.value)} 
-                placeholder="John Doe" 
-                required 
-              />
-            </div>
-          )}
+  <div className="form-group">
+    <label>First Name</label>
+    <input 
+      type="text" 
+      value={firstName} 
+      onChange={(e) => setFirstName(e.target.value)} 
+      placeholder="John" 
+      required 
+    />
+  </div>
+)}
+
+{!isLogin && (
+  <div className="form-group">
+    <label>Last Name</label>
+    <input 
+      type="text" 
+      value={lastName} 
+      onChange={(e) => setLastName(e.target.value)} 
+      placeholder="Doe" 
+      required 
+    />
+  </div>
+)}
 
           <div className="form-group">
             <label>Email Address</label>

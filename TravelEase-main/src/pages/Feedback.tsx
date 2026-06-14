@@ -68,10 +68,12 @@ const Feedback: React.FC = () => {
         <div className="feedback-form-card glass">
           <h3>Share your experience</h3>
           <form onSubmit={handleSubmit} className="feedback-form">
-            <div className="form-group">
-              <label>Your Name</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
-            </div>
+            {!user && (
+  <div className="form-group">
+    <label>Your Name</label>
+    <input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+  </div>
+)}
             <div className="form-group">
               <label>Category</label>
               <select value={category} onChange={(e) => setCategory(e.target.value)}>
