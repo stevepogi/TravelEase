@@ -15,6 +15,7 @@ interface Hotel {
   stars: number;
   area: string;
   amenities: string[];
+  website_url?: string;
 
 }
 
@@ -249,6 +250,17 @@ const fetchRoomsAndAvailability = async () => {
                     <span className="per-night">/ night</span>
                   </div>
                   <button className="btn-primary" onClick={() => { setSelectedHotel(hotel); setGalleryIdx(0); }}>Book Now</button>
+                  {hotel.website_url && (
+                <a
+                  href={hotel.website_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-ghost-dark"
+                  style={{ marginLeft: '8px' }}
+                >
+                 Visit Website
+                </a>
+                )}
                 </div>
                 {areaAverages[hotel.area] != null && (
                   <p style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: '4px' }}>
