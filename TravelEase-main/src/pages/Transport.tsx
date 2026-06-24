@@ -8,6 +8,7 @@ interface Transport {
   fare: number;
   description: string;
   icon?: string;
+  website_url?: string;
 }
 
 const Transport: React.FC = () => {
@@ -48,6 +49,17 @@ const Transport: React.FC = () => {
                 </div>
                 <p className="route"><strong>Route:</strong> {item.route}</p>
                 <p className="desc">{item.description}</p>
+                {item.website_url && (
+  <a
+    href={item.website_url}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="btn-ghost-dark"
+    style={{ marginTop: '8px', display: 'inline-block' }}
+  >
+    Visit Website
+  </a>
+)}
               </div>
             </div>
           ))}
